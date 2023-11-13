@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- <head>
+<meta charset="utf-8">
+<meta name="generator" content="Hugo 0.66.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet" type="text/css">
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
+<link rel="stylesheet" href="../css/normalize.css">
+<link rel="stylesheet" href="../css/skeleton.css">
+<link rel="stylesheet" href="../css/custom.css">
+<link rel="alternate" href="index.xml" type="application/rss+xml" title="Speech Research">
+<link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
+
+<title >CoMoSpeech: One-Step Speech and Singing Voice Synthesis via Consistency Model - Speech Research</title>
+</head> -->
+<head>
+	<meta charset="utf-8">
+	<meta name="generator" content="Hugo 0.88.1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href=""https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
+  
+	<link rel="stylesheet" href="css/custom.css">
+	<link rel="stylesheet" href="css/normalize.css">
+
+	<title>ZSinger: Zero-Shot Singing Voice Synthesis via regeneration learning - Speech Research</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<!-- 
+<body rightmargin="100" leftmargin="100" topmargin="50" bottommargin="100" line-height:160%>
+<font size="5"> -->
+ 
+<div class="container">
+  
+
+	<header role="banner">
+		
+			
+		
+		
+	</header>
+
+
+	<main role="main">
+		<article itemscope itemtype="https://schema.org/BlogPosting">
+
+            <h1 class="entry-title" itemprop="headline" align="center" ><font color="000093"  ><b>ZSinger: Zero-Shot Singing Voice Synthesis via regeneration learning</b></font></h1>
+			
+			<section itemprop="entry-text">
+				<br>
+
+<div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded"> 
+
+  <h2 id="abstract" style="text-align:center;"><font color="000093">Abstract</font></h2>
+  <style>
+    .centered-link {
+      text-align: center;
+    }
+  </style>
+<!--   
+  <div class="centered-link">
+    <a href="https://github.com/zhenye234/CoMoSpeech">CODE LINK</a>
+  </div> -->
+  <p style="text-align: justify;"><font color="061E61"> Singing voice synthesis has witnessed significant advancements in recent years, enabling the generation of high-quality artificial vocals. Previous singing acoustic models directly adopt generative models to learn the mapping from the lyric and musical score to mel-spectrogram. Therefore, the performance heavily relies on the quantity of paired training data.  Unfortunately, annotated singing data is scarce due to the difficulty of annotation, which limits the model generalization to unseen data.  In this paper, by introducing audio-only unpaired data, we propose the first <b>Z</b>ero-<b>S</b>hot singing voice synthesis system, ZSinger, which utilizes limited paired data and abundant unpaired data for training. More specifically, we introduce the regeneration learning paradigm to divide the singing acoustic model into two stages. The intermediate representations bridging the two stages are content features and pitch extracted from raw audio data. The model in the first stage converts lyrics and musical scores to intermediate representations via paired data training.  Subsequently, the second-stage model is trained on abundant data to produce the Mel-spectrogram, using content and pitch representations as inputs alongside singer identity extracted from short reference audio. Experimental results demonstrate that our proposed methods can achieve better audio quality and voice similarity than the baseline under zero-shot setting, particularly on less paired data. </font></p>
+  <!-- <br></br> -->
+  <figure>
+  <p align="center"><img src="2.png" width="100%"  class="center"/></p>
+ 
+
+  <figcaption style="text-align: center;">
+  <!-- <b>Figure 1:</b> The audio quality and inference speed comparisons of different TTS systems. We use  MOS (mean opinion score) and NFE (number of  function evaluations) to measure the audio quality and inference speed, respectively. The higher MOS and lower NFE indicate better audio quality and faster inference speed. The proposed CoMoSpeech achieves the best trade-off between audio quality and inference speed. In addition, our teacher models achieve the best audio quality among all the compared methods. -->
+  <b>Figure 1:</b>  An illustration of  ZSinger. 
+  </figcaption>
+  </figure>
+  <!-- <br></br> -->
+</div>
+<div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded"> 
+<h2 id="TTS" style="text-align:center;"><font color="000093">Zero-Shot Singing voice synthesis - Reconstruction</font></h2>
+<p style="text-align: justify;"><font color="061E61"> The below audio samples show the comparison between Recordings, ground-truth (GT) mel + Vocoder, FFTSinger-zs (5% training data and full training data), DiffSinger-zs (5% training data and full training data) and <b> our ZSinger (5% training data and full training data) </b>. Samples are selected from the test   of  M4Singer Dataset. 
+<ul style="list-style-type:square">
+<!--
+<li><font color="061E61"> For each dataset, the same HiFi-GAN vocoder pretrained on GT mel is used for all methods. </font></li>
+-->
+<!--<li>
+<font color="061E61"> Each generated sample has been normalized, and the raw recording is shown in Recordings. </font></li>
+-->
+<!--<li>
+<li><font color="061E61"> Our method ResGrad uses FastSpeech 2 as the initial predictor for estimating mel-spectrogram. </font></li>
+-->
+<!-- <li><font color="061E61"> The number of inference steps used by diffusion models is shown behind the name of models. For example, ResGrad-4 stands for ResGrad with 4 inference steps. But FastSpeech 2 is a model name instead of denoting the number of inference steps. </font></li> -->
+<!-- <li><font color="061E61"> For each dataset, the inference speed measured by the real-time factor (RTF) is shown in the brackets of the first case. </font></li> -->
+<!-- <li><font color="061E61"> In order to improve the inference speed at each sampling step, ResGrad uses the same U-Net architecture in GradTTS but with twice fewer channels to reduce the model size (2.0M in ResGrad vs 7.6M in GradTTS). </font></li> -->
+</ul>
+
+<!-- <br></br>
+<p><b><font color="000093">LJSpeech: A dataset contains the recordings from a female speaker at a sampling rate of 22.05kHz.</font></b></p> -->
+<br></br>
+<p><em><font color="061E62">Sample 1: 把永远爱你写进诗的结尾 </font></em></p>
+<table align="center">
+<thead>
+<tr>
+<th style="font-weight: normal;text-align: center">Recordings</th>
+<th style="font-weight: normal;text-align: center">GT mel + Vocoder</th>
+<!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+<td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_wav_gt_mel.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+<!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+</tr>
+</tbody>
+</table>
+
+
+<table align="center">
+  <thead>
+  <tr>
+  <th style="font-weight: normal;text-align: center">0_fft_005</th>
+  <th style="font-weight: normal;text-align: center">0_fft_full</th>
+  <th style="font-weight: normal;text-align: center">0_m4_005</th>
+  <th style="font-weight: normal;text-align: center">0_m4_full</th>
+  <th style="font-weight: normal;text-align: center">0_z_005</th>
+  <th style="font-weight: normal;text-align: center">0_z_full</th>
+  <th style="font-weight: normal;text-align: center">0_target</th>
+  <th style="font-weight: normal;text-align: center">0_source</th>
+  
+  <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="demo\0_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  
+  <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+  </tr>
+  </tbody>
+  </table>
+
+
+
+  <table align="center">
+    <thead>
+    <tr>
+    <th style="font-weight: normal;text-align: center">1_fft_005</th>
+    <th style="font-weight: normal;text-align: center">1_fft_full</th>
+    <th style="font-weight: normal;text-align: center">1_m4_005</th>
+    <th style="font-weight: normal;text-align: center">1_m4_full</th>
+    <th style="font-weight: normal;text-align: center">1_z_005</th>
+    <th style="font-weight: normal;text-align: center">1_z_full</th>
+    <th style="font-weight: normal;text-align: center">1_target</th>
+    <th style="font-weight: normal;text-align: center">1_source</th>
+
+    <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\1_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    
+    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/1_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+    </tr>
+    </tbody>
+    </table>
+
+    <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">2_fft_005</th>
+      <th style="font-weight: normal;text-align: center">2_fft_full</th>
+      <th style="font-weight: normal;text-align: center">2_m4_005</th>
+      <th style="font-weight: normal;text-align: center">2_m4_full</th>
+      <th style="font-weight: normal;text-align: center">2_z_005</th>
+      <th style="font-weight: normal;text-align: center">2_z_full</th>
+      <th style="font-weight: normal;text-align: center">2_target</th>
+      <th style="font-weight: normal;text-align: center">2_source</th>
+
+      <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\2_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      
+      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/2_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+      </tr>
+      </tbody>
+      </table>
+
+    <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">3_fft_005</th>
+      <th style="font-weight: normal;text-align: center">3_fft_full</th>
+      <th style="font-weight: normal;text-align: center">3_m4_005</th>
+      <th style="font-weight: normal;text-align: center">3_m4_full</th>
+      <th style="font-weight: normal;text-align: center">3_z_005</th>
+      <th style="font-weight: normal;text-align: center">3_z_full</th>
+      <th style="font-weight: normal;text-align: center">3_target</th>
+      <th style="font-weight: normal;text-align: center">3_source</th>
+
+      <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\3_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      
+      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/3_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+      </tr>
+      </tbody>
+      </table>
+
+      <table align="center">
+        <thead>
+        <tr>
+        <th style="font-weight: normal;text-align: center">4_fft_005</th>
+        <th style="font-weight: normal;text-align: center">4_fft_full</th>
+        <th style="font-weight: normal;text-align: center">4_m4_005</th>
+        <th style="font-weight: normal;text-align: center">4_m4_full</th>
+        <th style="font-weight: normal;text-align: center">4_z_005</th>
+        <th style="font-weight: normal;text-align: center">4_z_full</th>
+        <th style="font-weight: normal;text-align: center">4_target</th>
+        <th style="font-weight: normal;text-align: center">4_source</th>    
+
+        <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\4_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        
+        <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/4_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+        </tr>
+        </tbody>
+        </table>
+
+        <table align="center">
+          <thead>
+          <tr>
+          <th style="font-weight: normal;text-align: center">5_fft_005</th>
+          <th style="font-weight: normal;text-align: center">5_fft_full</th>
+          <th style="font-weight: normal;text-align: center">5_m5_005</th>
+          <th style="font-weight: normal;text-align: center">5_m5_full</th>
+          <th style="font-weight: normal;text-align: center">5_z_005</th>
+          <th style="font-weight: normal;text-align: center">5_z_full</th>
+          <th style="font-weight: normal;text-align: center">5_target</th>
+          <th style="font-weight: normal;text-align: center">5_source</th>
+
+          <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_m5_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_m5_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\5_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          
+          <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/5_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+          </tr>
+          </tbody>
+          </table>
+
+  <table align="center">
+    <thead>
+    <tr>
+    <th style="font-weight: normal;text-align: center">6_fft_005</th>
+    <th style="font-weight: normal;text-align: center">6_fft_full</th>
+    <th style="font-weight: normal;text-align: center">6_m6_005</th>
+    <th style="font-weight: normal;text-align: center">6_m6_full</th>
+    <th style="font-weight: normal;text-align: center">6_z_005</th>
+    <th style="font-weight: normal;text-align: center">6_z_full</th>
+    <th style="font-weight: normal;text-align: center">6_target</th>
+    <th style="font-weight: normal;text-align: center">6_source</th>
+
+    <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_m6_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_m6_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="demo\6_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    
+    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/6_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+    </tr>
+    </tbody>
+    </table>
+
+
+    <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">7_fft_005</th>
+      <th style="font-weight: normal;text-align: center">7_fft_full</th>
+      <th style="font-weight: normal;text-align: center">7_m4_005</th>
+      <th style="font-weight: normal;text-align: center">7_m4_full</th>
+      <th style="font-weight: normal;text-align: center">7_z_005</th>
+      <th style="font-weight: normal;text-align: center">7_z_full</th>
+      <th style="font-weight: normal;text-align: center">7_target</th>
+      <th style="font-weight: normal;text-align: center">7_source</th>
+      
+      <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="demo\7_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      
+      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/7_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+      </tr>
+      </tbody>
+      </table>
+    
+      <table align="center">
+        <thead>
+        <tr>
+        <th style="font-weight: normal;text-align: center">8_fft_005</th>
+        <th style="font-weight: normal;text-align: center">8_fft_full</th>
+        <th style="font-weight: normal;text-align: center">8_m4_005</th>
+        <th style="font-weight: normal;text-align: center">8_m4_full</th>
+        <th style="font-weight: normal;text-align: center">8_z_005</th>
+        <th style="font-weight: normal;text-align: center">8_z_full</th>
+        <th style="font-weight: normal;text-align: center">8_target</th>
+        <th style="font-weight: normal;text-align: center">8_source</th>
+        
+        <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="demo\8_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        
+        <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/8_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+        </tr>
+        </tbody>
+        </table>
+      
+
+        <table align="center">
+          <thead>
+          <tr>
+          <th style="font-weight: normal;text-align: center">9_fft_005</th>
+          <th style="font-weight: normal;text-align: center">9_fft_full</th>
+          <th style="font-weight: normal;text-align: center">9_m4_005</th>
+          <th style="font-weight: normal;text-align: center">9_m4_full</th>
+          <th style="font-weight: normal;text-align: center">9_z_005</th>
+          <th style="font-weight: normal;text-align: center">9_z_full</th>
+          <th style="font-weight: normal;text-align: center">9_target</th>
+          <th style="font-weight: normal;text-align: center">9_source</th>
+          
+          <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="demo\9_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          
+          <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/9_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+          </tr>
+          </tbody>
+          </table>
+        
+          <table align="center">
+            <thead>
+            <tr>
+            <th style="font-weight: normal;text-align: center">10_fft_005</th>
+            <th style="font-weight: normal;text-align: center">10_fft_full</th>
+            <th style="font-weight: normal;text-align: center">10_m4_005</th>
+            <th style="font-weight: normal;text-align: center">10_m4_full</th>
+            <th style="font-weight: normal;text-align: center">10_z_005</th>
+            <th style="font-weight: normal;text-align: center">10_z_full</th>
+            <th style="font-weight: normal;text-align: center">10_target</th>
+            <th style="font-weight: normal;text-align: center">10_source</th>
+            
+            <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="demo\10_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            
+            <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/10_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+            </tr>
+            </tbody>
+            </table>
+
+
+            <table align="center">
+              <thead>
+              <tr>
+              <th style="font-weight: normal;text-align: center">11_fft_005</th>
+              <th style="font-weight: normal;text-align: center">11_fft_full</th>
+              <th style="font-weight: normal;text-align: center">11_m14_005</th>
+              <th style="font-weight: normal;text-align: center">11_m14_full</th>
+              <th style="font-weight: normal;text-align: center">11_z_005</th>
+              <th style="font-weight: normal;text-align: center">11_z_full</th>
+              <th style="font-weight: normal;text-align: center">11_target</th>
+              <th style="font-weight: normal;text-align: center">11_source</th>
+          
+              <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_m14_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_m14_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\11_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              
+              <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/11_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+              </tr>
+              </tbody>
+              </table>
+          
+              <table align="center">
+                <thead>
+                <tr>
+                <th style="font-weight: normal;text-align: center">12_fft_005</th>
+                <th style="font-weight: normal;text-align: center">12_fft_full</th>
+                <th style="font-weight: normal;text-align: center">12_m14_005</th>
+                <th style="font-weight: normal;text-align: center">12_m14_full</th>
+                <th style="font-weight: normal;text-align: center">12_z_005</th>
+                <th style="font-weight: normal;text-align: center">12_z_full</th>
+                <th style="font-weight: normal;text-align: center">12_target</th>
+                <th style="font-weight: normal;text-align: center">12_source</th>
+          
+                <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_m14_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_m14_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\12_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                
+                <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/12_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                </tr>
+                </tbody>
+                </table>
+          
+              <table align="center">
+                <thead>
+                <tr>
+                <th style="font-weight: normal;text-align: center">13_fft_005</th>
+                <th style="font-weight: normal;text-align: center">13_fft_full</th>
+                <th style="font-weight: normal;text-align: center">13_m14_005</th>
+                <th style="font-weight: normal;text-align: center">13_m14_full</th>
+                <th style="font-weight: normal;text-align: center">13_z_005</th>
+                <th style="font-weight: normal;text-align: center">13_z_full</th>
+                <th style="font-weight: normal;text-align: center">13_target</th>
+                <th style="font-weight: normal;text-align: center">13_source</th>
+          
+                <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_m14_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_m14_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\13_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                
+                <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/13_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                </tr>
+                </tbody>
+                </table>
+          
+                <table align="center">
+                  <thead>
+                  <tr>
+                  <th style="font-weight: normal;text-align: center">14_fft_005</th>
+                  <th style="font-weight: normal;text-align: center">14_fft_full</th>
+                  <th style="font-weight: normal;text-align: center">14_m14_005</th>
+                  <th style="font-weight: normal;text-align: center">14_m14_full</th>
+                  <th style="font-weight: normal;text-align: center">14_z_005</th>
+                  <th style="font-weight: normal;text-align: center">14_z_full</th>
+                  <th style="font-weight: normal;text-align: center">14_target</th>
+                  <th style="font-weight: normal;text-align: center">14_source</th>    
+          
+                  <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_m14_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_m14_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\14_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  
+                  <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/14_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                  </tr>
+                  </tbody>
+                  </table>
+          
+                  <table align="center">
+                    <thead>
+                    <tr>
+                    <th style="font-weight: normal;text-align: center">15_fft_005</th>
+                    <th style="font-weight: normal;text-align: center">15_fft_full</th>
+                    <th style="font-weight: normal;text-align: center">15_m15_005</th>
+                    <th style="font-weight: normal;text-align: center">15_m15_full</th>
+                    <th style="font-weight: normal;text-align: center">15_z_005</th>
+                    <th style="font-weight: normal;text-align: center">15_z_full</th>
+                    <th style="font-weight: normal;text-align: center">15_target</th>
+                    <th style="font-weight: normal;text-align: center">15_source</th>
+          
+                    <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_m15_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_m15_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\15_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    
+                    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/15_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                    </tr>
+                    </tbody>
+                    </table>
+          
+            <table align="center">
+              <thead>
+              <tr>
+              <th style="font-weight: normal;text-align: center">16_fft_005</th>
+              <th style="font-weight: normal;text-align: center">16_fft_full</th>
+              <th style="font-weight: normal;text-align: center">16_m16_005</th>
+              <th style="font-weight: normal;text-align: center">16_m16_full</th>
+              <th style="font-weight: normal;text-align: center">16_z_005</th>
+              <th style="font-weight: normal;text-align: center">16_z_full</th>
+              <th style="font-weight: normal;text-align: center">16_target</th>
+              <th style="font-weight: normal;text-align: center">16_source</th>
+          
+              <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_m16_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_m16_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              <td style=" text-align: center"><audio controls="controls" ><source src="demo\16_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+              
+              <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/16_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+              </tr>
+              </tbody>
+              </table>
+          
+          
+              <table align="center">
+                <thead>
+                <tr>
+                <th style="font-weight: normal;text-align: center">17_fft_005</th>
+                <th style="font-weight: normal;text-align: center">17_fft_full</th>
+                <th style="font-weight: normal;text-align: center">17_m14_005</th>
+                <th style="font-weight: normal;text-align: center">17_m14_full</th>
+                <th style="font-weight: normal;text-align: center">17_z_005</th>
+                <th style="font-weight: normal;text-align: center">17_z_full</th>
+                <th style="font-weight: normal;text-align: center">17_target</th>
+                <th style="font-weight: normal;text-align: center">17_source</th>
+                
+                <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_m14_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_m14_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                <td style=" text-align: center"><audio controls="controls" ><source src="demo\17_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                
+                <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/17_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                </tr>
+                </tbody>
+                </table>
+              
+                <table align="center">
+                  <thead>
+                  <tr>
+                  <th style="font-weight: normal;text-align: center">18_fft_005</th>
+                  <th style="font-weight: normal;text-align: center">18_fft_full</th>
+                  <th style="font-weight: normal;text-align: center">18_m14_005</th>
+                  <th style="font-weight: normal;text-align: center">18_m14_full</th>
+                  <th style="font-weight: normal;text-align: center">18_z_005</th>
+                  <th style="font-weight: normal;text-align: center">18_z_full</th>
+                  <th style="font-weight: normal;text-align: center">18_target</th>
+                  <th style="font-weight: normal;text-align: center">18_source</th>
+                  
+                  <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_m14_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_m14_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\18_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                  
+                  <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/18_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                  </tr>
+                  </tbody>
+                  </table>
+                
+          
+                  <table align="center">
+                    <thead>
+                    <tr>
+                    <th style="font-weight: normal;text-align: center">19_fft_005</th>
+                    <th style="font-weight: normal;text-align: center">19_fft_full</th>
+                    <th style="font-weight: normal;text-align: center">19_m14_005</th>
+                    <th style="font-weight: normal;text-align: center">19_m14_full</th>
+                    <th style="font-weight: normal;text-align: center">19_z_005</th>
+                    <th style="font-weight: normal;text-align: center">19_z_full</th>
+                    <th style="font-weight: normal;text-align: center">19_target</th>
+                    <th style="font-weight: normal;text-align: center">19_source</th>
+                    
+                    <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_m14_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_m14_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\19_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                    
+                    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/19_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                    </tr>
+                    </tbody>
+                    </table>
+
+
+                    <table align="center">
+                      <thead>
+                      <tr>
+                      <th style="font-weight: normal;text-align: center">20_fft_005</th>
+                      <th style="font-weight: normal;text-align: center">20_fft_full</th>
+                      <th style="font-weight: normal;text-align: center">20_m24_005</th>
+                      <th style="font-weight: normal;text-align: center">20_m24_full</th>
+                      <th style="font-weight: normal;text-align: center">20_z_005</th>
+                      <th style="font-weight: normal;text-align: center">20_z_full</th>
+                      <th style="font-weight: normal;text-align: center">20_target</th>
+                      <th style="font-weight: normal;text-align: center">20_source</th>
+                      
+                      <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\20_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                      
+                      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/20_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                      </tr>
+                      </tbody>
+                      </table>
+                    
+                    
+                    
+                      <table align="center">
+                        <thead>
+                        <tr>
+                        <th style="font-weight: normal;text-align: center">21_fft_005</th>
+                        <th style="font-weight: normal;text-align: center">21_fft_full</th>
+                        <th style="font-weight: normal;text-align: center">21_m24_005</th>
+                        <th style="font-weight: normal;text-align: center">21_m24_full</th>
+                        <th style="font-weight: normal;text-align: center">21_z_005</th>
+                        <th style="font-weight: normal;text-align: center">21_z_full</th>
+                        <th style="font-weight: normal;text-align: center">21_target</th>
+                        <th style="font-weight: normal;text-align: center">21_source</th>
+                    
+                        <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\21_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        
+                        <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/21_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                        </tr>
+                        </tbody>
+                        </table>
+                    
+                        <table align="center">
+                          <thead>
+                          <tr>
+                          <th style="font-weight: normal;text-align: center">22_fft_005</th>
+                          <th style="font-weight: normal;text-align: center">22_fft_full</th>
+                          <th style="font-weight: normal;text-align: center">22_m24_005</th>
+                          <th style="font-weight: normal;text-align: center">22_m24_full</th>
+                          <th style="font-weight: normal;text-align: center">22_z_005</th>
+                          <th style="font-weight: normal;text-align: center">22_z_full</th>
+                          <th style="font-weight: normal;text-align: center">22_target</th>
+                          <th style="font-weight: normal;text-align: center">22_source</th>
+                    
+                          <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                          </tr>
+                          </thead>
+                          <tbody>
+                          <tr>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\22_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          
+                          <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/22_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                          </tr>
+                          </tbody>
+                          </table>
+                    
+                        <table align="center">
+                          <thead>
+                          <tr>
+                          <th style="font-weight: normal;text-align: center">23_fft_005</th>
+                          <th style="font-weight: normal;text-align: center">23_fft_full</th>
+                          <th style="font-weight: normal;text-align: center">23_m24_005</th>
+                          <th style="font-weight: normal;text-align: center">23_m24_full</th>
+                          <th style="font-weight: normal;text-align: center">23_z_005</th>
+                          <th style="font-weight: normal;text-align: center">23_z_full</th>
+                          <th style="font-weight: normal;text-align: center">23_target</th>
+                          <th style="font-weight: normal;text-align: center">23_source</th>
+                    
+                          <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                          </tr>
+                          </thead>
+                          <tbody>
+                          <tr>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\23_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          
+                          <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/23_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                          </tr>
+                          </tbody>
+                          </table>
+                    
+                          <table align="center">
+                            <thead>
+                            <tr>
+                            <th style="font-weight: normal;text-align: center">24_fft_005</th>
+                            <th style="font-weight: normal;text-align: center">24_fft_full</th>
+                            <th style="font-weight: normal;text-align: center">24_m24_005</th>
+                            <th style="font-weight: normal;text-align: center">24_m24_full</th>
+                            <th style="font-weight: normal;text-align: center">24_z_005</th>
+                            <th style="font-weight: normal;text-align: center">24_z_full</th>
+                            <th style="font-weight: normal;text-align: center">24_target</th>
+                            <th style="font-weight: normal;text-align: center">24_source</th>    
+                    
+                            <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\24_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            
+                            <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/24_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                            </tr>
+                            </tbody>
+                            </table>
+                    
+                            <table align="center">
+                              <thead>
+                              <tr>
+                              <th style="font-weight: normal;text-align: center">25_fft_005</th>
+                              <th style="font-weight: normal;text-align: center">25_fft_full</th>
+                              <th style="font-weight: normal;text-align: center">25_m25_005</th>
+                              <th style="font-weight: normal;text-align: center">25_m25_full</th>
+                              <th style="font-weight: normal;text-align: center">25_z_005</th>
+                              <th style="font-weight: normal;text-align: center">25_z_full</th>
+                              <th style="font-weight: normal;text-align: center">25_target</th>
+                              <th style="font-weight: normal;text-align: center">25_source</th>
+                    
+                              <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                              </tr>
+                              </thead>
+                              <tbody>
+                              <tr>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_m25_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_m25_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\25_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              
+                              <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/25_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                              </tr>
+                              </tbody>
+                              </table>
+                    
+                      <table align="center">
+                        <thead>
+                        <tr>
+                        <th style="font-weight: normal;text-align: center">26_fft_005</th>
+                        <th style="font-weight: normal;text-align: center">26_fft_full</th>
+                        <th style="font-weight: normal;text-align: center">26_m26_005</th>
+                        <th style="font-weight: normal;text-align: center">26_m26_full</th>
+                        <th style="font-weight: normal;text-align: center">26_z_005</th>
+                        <th style="font-weight: normal;text-align: center">26_z_full</th>
+                        <th style="font-weight: normal;text-align: center">26_target</th>
+                        <th style="font-weight: normal;text-align: center">26_source</th>
+                    
+                        <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_m26_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_m26_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\26_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                        
+                        <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/26_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                        </tr>
+                        </tbody>
+                        </table>
+                    
+                    
+                        <table align="center">
+                          <thead>
+                          <tr>
+                          <th style="font-weight: normal;text-align: center">27_fft_005</th>
+                          <th style="font-weight: normal;text-align: center">27_fft_full</th>
+                          <th style="font-weight: normal;text-align: center">27_m24_005</th>
+                          <th style="font-weight: normal;text-align: center">27_m24_full</th>
+                          <th style="font-weight: normal;text-align: center">27_z_005</th>
+                          <th style="font-weight: normal;text-align: center">27_z_full</th>
+                          <th style="font-weight: normal;text-align: center">27_target</th>
+                          <th style="font-weight: normal;text-align: center">27_source</th>
+                          
+                          <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                          </tr>
+                          </thead>
+                          <tbody>
+                          <tr>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\27_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                          
+                          <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/27_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                          </tr>
+                          </tbody>
+                          </table>
+                        
+                          <table align="center">
+                            <thead>
+                            <tr>
+                            <th style="font-weight: normal;text-align: center">28_fft_005</th>
+                            <th style="font-weight: normal;text-align: center">28_fft_full</th>
+                            <th style="font-weight: normal;text-align: center">28_m24_005</th>
+                            <th style="font-weight: normal;text-align: center">28_m24_full</th>
+                            <th style="font-weight: normal;text-align: center">28_z_005</th>
+                            <th style="font-weight: normal;text-align: center">28_z_full</th>
+                            <th style="font-weight: normal;text-align: center">28_target</th>
+                            <th style="font-weight: normal;text-align: center">28_source</th>
+                            
+                            <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            <td style=" text-align: center"><audio controls="controls" ><source src="demo\28_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                            
+                            <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/28_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                            </tr>
+                            </tbody>
+                            </table>
+                          
+                    
+                            <table align="center">
+                              <thead>
+                              <tr>
+                              <th style="font-weight: normal;text-align: center">29_fft_005</th>
+                              <th style="font-weight: normal;text-align: center">29_fft_full</th>
+                              <th style="font-weight: normal;text-align: center">29_m24_005</th>
+                              <th style="font-weight: normal;text-align: center">29_m24_full</th>
+                              <th style="font-weight: normal;text-align: center">29_z_005</th>
+                              <th style="font-weight: normal;text-align: center">29_z_full</th>
+                              <th style="font-weight: normal;text-align: center">29_target</th>
+                              <th style="font-weight: normal;text-align: center">29_source</th>
+                              
+                              <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                              </tr>
+                              </thead>
+                              <tbody>
+                              <tr>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              <td style=" text-align: center"><audio controls="controls" ><source src="demo\29_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                              
+                              <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/29_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                              </tr>
+                              </tbody>
+                              </table>
+                            
+                              <table align="center">
+                                <thead>
+                                <tr>
+                                <th style="font-weight: normal;text-align: center">30_fft_005</th>
+                                <th style="font-weight: normal;text-align: center">30_fft_full</th>
+                                <th style="font-weight: normal;text-align: center">30_m24_005</th>
+                                <th style="font-weight: normal;text-align: center">30_m24_full</th>
+                                <th style="font-weight: normal;text-align: center">30_z_005</th>
+                                <th style="font-weight: normal;text-align: center">30_z_full</th>
+                                <th style="font-weight: normal;text-align: center">30_target</th>
+                                <th style="font-weight: normal;text-align: center">30_source</th>
+                                
+                                <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_m24_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_m24_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                <td style=" text-align: center"><audio controls="controls" ><source src="demo\30_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                
+                                <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/30_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                </tr>
+                                </tbody>
+                                </table>
+                                <table align="center">
+                                  <thead>
+                                  <tr>
+                                  <th style="font-weight: normal;text-align: center">31_fft_005</th>
+                                  <th style="font-weight: normal;text-align: center">31_fft_full</th>
+                                  <th style="font-weight: normal;text-align: center">31_m34_005</th>
+                                  <th style="font-weight: normal;text-align: center">31_m34_full</th>
+                                  <th style="font-weight: normal;text-align: center">31_z_005</th>
+                                  <th style="font-weight: normal;text-align: center">31_z_full</th>
+                                  <th style="font-weight: normal;text-align: center">31_target</th>
+                                  <th style="font-weight: normal;text-align: center">31_source</th>
+                              
+                                  <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                  </tr>
+                                  </thead>
+                                  <tbody>
+                                  <tr>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\31_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  
+                                  <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/31_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                  </tr>
+                                  </tbody>
+                                  </table>
+                              
+                                  <table align="center">
+                                    <thead>
+                                    <tr>
+                                    <th style="font-weight: normal;text-align: center">32_fft_005</th>
+                                    <th style="font-weight: normal;text-align: center">32_fft_full</th>
+                                    <th style="font-weight: normal;text-align: center">32_m34_005</th>
+                                    <th style="font-weight: normal;text-align: center">32_m34_full</th>
+                                    <th style="font-weight: normal;text-align: center">32_z_005</th>
+                                    <th style="font-weight: normal;text-align: center">32_z_full</th>
+                                    <th style="font-weight: normal;text-align: center">32_target</th>
+                                    <th style="font-weight: normal;text-align: center">32_source</th>
+                              
+                                    <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\32_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    
+                                    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/32_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                    </tr>
+                                    </tbody>
+                                    </table>
+                              
+                                  <table align="center">
+                                    <thead>
+                                    <tr>
+                                    <th style="font-weight: normal;text-align: center">33_fft_005</th>
+                                    <th style="font-weight: normal;text-align: center">33_fft_full</th>
+                                    <th style="font-weight: normal;text-align: center">33_m34_005</th>
+                                    <th style="font-weight: normal;text-align: center">33_m34_full</th>
+                                    <th style="font-weight: normal;text-align: center">33_z_005</th>
+                                    <th style="font-weight: normal;text-align: center">33_z_full</th>
+                                    <th style="font-weight: normal;text-align: center">33_target</th>
+                                    <th style="font-weight: normal;text-align: center">33_source</th>
+                              
+                                    <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\33_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    
+                                    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/33_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                    </tr>
+                                    </tbody>
+                                    </table>
+                              
+                                    <table align="center">
+                                      <thead>
+                                      <tr>
+                                      <th style="font-weight: normal;text-align: center">34_fft_005</th>
+                                      <th style="font-weight: normal;text-align: center">34_fft_full</th>
+                                      <th style="font-weight: normal;text-align: center">34_m34_005</th>
+                                      <th style="font-weight: normal;text-align: center">34_m34_full</th>
+                                      <th style="font-weight: normal;text-align: center">34_z_005</th>
+                                      <th style="font-weight: normal;text-align: center">34_z_full</th>
+                                      <th style="font-weight: normal;text-align: center">34_target</th>
+                                      <th style="font-weight: normal;text-align: center">34_source</th>    
+                              
+                                      <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                      </tr>
+                                      </thead>
+                                      <tbody>
+                                      <tr>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\34_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      
+                                      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/34_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                      </tr>
+                                      </tbody>
+                                      </table>
+                              
+                                      <table align="center">
+                                        <thead>
+                                        <tr>
+                                        <th style="font-weight: normal;text-align: center">35_fft_005</th>
+                                        <th style="font-weight: normal;text-align: center">35_fft_full</th>
+                                        <th style="font-weight: normal;text-align: center">35_m35_005</th>
+                                        <th style="font-weight: normal;text-align: center">35_m35_full</th>
+                                        <th style="font-weight: normal;text-align: center">35_z_005</th>
+                                        <th style="font-weight: normal;text-align: center">35_z_full</th>
+                                        <th style="font-weight: normal;text-align: center">35_target</th>
+                                        <th style="font-weight: normal;text-align: center">35_source</th>
+                              
+                                        <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_m35_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_m35_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\35_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        
+                                        <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/35_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                        </tr>
+                                        </tbody>
+                                        </table>
+                              
+                                <table align="center">
+                                  <thead>
+                                  <tr>
+                                  <th style="font-weight: normal;text-align: center">36_fft_005</th>
+                                  <th style="font-weight: normal;text-align: center">36_fft_full</th>
+                                  <th style="font-weight: normal;text-align: center">36_m36_005</th>
+                                  <th style="font-weight: normal;text-align: center">36_m36_full</th>
+                                  <th style="font-weight: normal;text-align: center">36_z_005</th>
+                                  <th style="font-weight: normal;text-align: center">36_z_full</th>
+                                  <th style="font-weight: normal;text-align: center">36_target</th>
+                                  <th style="font-weight: normal;text-align: center">36_source</th>
+                              
+                                  <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                  </tr>
+                                  </thead>
+                                  <tbody>
+                                  <tr>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_m36_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_m36_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  <td style=" text-align: center"><audio controls="controls" ><source src="demo\36_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                  
+                                  <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/36_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                  </tr>
+                                  </tbody>
+                                  </table>
+                              
+                              
+                                  <table align="center">
+                                    <thead>
+                                    <tr>
+                                    <th style="font-weight: normal;text-align: center">37_fft_005</th>
+                                    <th style="font-weight: normal;text-align: center">37_fft_full</th>
+                                    <th style="font-weight: normal;text-align: center">37_m34_005</th>
+                                    <th style="font-weight: normal;text-align: center">37_m34_full</th>
+                                    <th style="font-weight: normal;text-align: center">37_z_005</th>
+                                    <th style="font-weight: normal;text-align: center">37_z_full</th>
+                                    <th style="font-weight: normal;text-align: center">37_target</th>
+                                    <th style="font-weight: normal;text-align: center">37_source</th>
+                                    
+                                    <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    <td style=" text-align: center"><audio controls="controls" ><source src="demo\37_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                    
+                                    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/37_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                    </tr>
+                                    </tbody>
+                                    </table>
+                                  
+                                    <table align="center">
+                                      <thead>
+                                      <tr>
+                                      <th style="font-weight: normal;text-align: center">38_fft_005</th>
+                                      <th style="font-weight: normal;text-align: center">38_fft_full</th>
+                                      <th style="font-weight: normal;text-align: center">38_m34_005</th>
+                                      <th style="font-weight: normal;text-align: center">38_m34_full</th>
+                                      <th style="font-weight: normal;text-align: center">38_z_005</th>
+                                      <th style="font-weight: normal;text-align: center">38_z_full</th>
+                                      <th style="font-weight: normal;text-align: center">38_target</th>
+                                      <th style="font-weight: normal;text-align: center">38_source</th>
+                                      
+                                      <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                      </tr>
+                                      </thead>
+                                      <tbody>
+                                      <tr>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      <td style=" text-align: center"><audio controls="controls" ><source src="demo\38_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                      
+                                      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/38_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                      </tr>
+                                      </tbody>
+                                      </table>
+                                    
+                              
+                                      <table align="center">
+                                        <thead>
+                                        <tr>
+                                        <th style="font-weight: normal;text-align: center">39_fft_005</th>
+                                        <th style="font-weight: normal;text-align: center">39_fft_full</th>
+                                        <th style="font-weight: normal;text-align: center">39_m34_005</th>
+                                        <th style="font-weight: normal;text-align: center">39_m34_full</th>
+                                        <th style="font-weight: normal;text-align: center">39_z_005</th>
+                                        <th style="font-weight: normal;text-align: center">39_z_full</th>
+                                        <th style="font-weight: normal;text-align: center">39_target</th>
+                                        <th style="font-weight: normal;text-align: center">39_source</th>
+                                        
+                                        <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        <td style=" text-align: center"><audio controls="controls" ><source src="demo\39_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                        
+                                        <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/39_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                        </tr>
+                                        </tbody>
+                                        </table>
+                                      
+                                        <table align="center">
+                                          <thead>
+                                          <tr>
+                                          <th style="font-weight: normal;text-align: center">40_fft_005</th>
+                                          <th style="font-weight: normal;text-align: center">40_fft_full</th>
+                                          <th style="font-weight: normal;text-align: center">40_m34_005</th>
+                                          <th style="font-weight: normal;text-align: center">40_m34_full</th>
+                                          <th style="font-weight: normal;text-align: center">40_z_005</th>
+                                          <th style="font-weight: normal;text-align: center">40_z_full</th>
+                                          <th style="font-weight: normal;text-align: center">40_target</th>
+                                          <th style="font-weight: normal;text-align: center">40_source</th>
+                                          
+                                          <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+                                          </tr>
+                                          </thead>
+                                          <tbody>
+                                          <tr>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_m34_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_m34_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_target.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          <td style=" text-align: center"><audio controls="controls" ><source src="demo\40_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+                                          
+                                          <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/40_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+                                          </tr>
+                                          </tbody>
+                                          </table>
+                                                            
+                  
+          
+
+
+
+<table align="center">
+<thead>
+<tr>
+<th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+<th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+<th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+</tr>
+</thead>
+<tbody><b></b>
+<tr>
+<td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+<td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+<td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+</tr>
+</tbody>
+</table>
+
+<table align="center">
+  <thead>
+  <tr>
+  <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+  <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+  <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\14_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  </tr>
+  </tbody>
+  </table>
+
+
+  <br></br>
+  <p><em><font color="061E62">Sample 2: 落在我蓝色百褶裙上 </font></em></p>
+  <table align="center">
+  <thead>
+  <tr>
+  <th style="font-weight: normal;text-align: center">Recordings</th>
+  <th style="font-weight: normal;text-align: center">GT mel + Vocoder</th>
+  <!-- <th style="font-weight: normal;text-align: center">FastSpeech 2 <br> (NFE:1, RTF: 0.0017)</th> -->
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_wav_gt_mel.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+  </tr>
+  </tbody>
+  </table>
+  
+  <table align="center">
+  <thead>
+  <tr>
+  <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+  <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+  <th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+  </tr>
+  </thead>
+  <tbody><b></b>
+  <tr>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+  </tr>
+  </tbody>
+  </table>
+  
+  <table align="center">
+    <thead>
+    <tr>
+    <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+    <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+    <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\17_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    </tr>
+    </tbody>
+    </table>
+
+    <br></br>
+    <p><em><font color="061E62">Sample 3: 靠嬉笑来虚度 聚散得慷慨 </font></em></p>
+    <table align="center">
+    <thead>
+    <tr>
+    <th style="font-weight: normal;text-align: center">Recordings</th>
+    <th style="font-weight: normal;text-align: center">GT mel + Vocoder</th>
+    
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_wav_gt_mel.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+    </tr>
+    </tbody>
+    </table>
+    
+    <table align="center">
+    <thead>
+    <tr>
+    <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+    <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+    <th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+    </tr>
+    </thead>
+    <tbody><b></b>
+    <tr>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    </tr>
+    </tbody>
+    </table>
+    
+    <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+      <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+      <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\18_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      </tr>
+      </tbody>
+      </table>
+     
+     
+      <br></br>
+      <p><em><font color="061E62">Sample 4: 我来到你的城市 </font></em></p>
+      <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">Recordings</th>
+      <th style="font-weight: normal;text-align: center">GT mel + Vocoder</th>
+      
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_wav_gt_mel.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+      </tr>
+      </tbody>
+      </table>
+      
+      <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+      <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+      <th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+      </tr>
+      </thead>
+      <tbody><b></b>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      </tr>
+      </tbody>
+      </table>
+      
+      <table align="center">
+        <thead>
+        <tr>
+        <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+        <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+        <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\m4\19_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        </tr>
+        </tbody>
+        </table>
+</div>
+ 
+<div class="container pt-5 mt-5 shadow p-5 mb-5 bg-white rounded"> 
+  <h2 id="TTS" style="text-align:center;"><font color="000093">Zero-Shot Singing voice synthesis - Conversion</font></h2>
+  <p style="text-align: justify;"><font color="061E61"> The below audio samples show the comparison between GT content & Pitch, Reference audio, FFTSinger-zs (5% training data and full training data), DiffSinger-zs (5% training data and full training data) and <b> our ZSinger (5% training data and full training data) </b>. Samples are selected from the test   of  M4Singer Dataset. 
+  <ul style="list-style-type:square">
+
+    <br></br>
+    <p><em><font color="061E62">Sample 1: 余路还要走多久 </font></em></p>
+    <table align="center">
+    <thead>
+    <tr>
+      <th style="font-weight: normal;text-align: center">Source </th>
+      <th style="font-weight: normal;text-align: center">Prompt </th>
+    
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0004.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+    </tr>
+    </tbody>
+    </table>
+    
+    <table align="center">
+    <thead>
+    <tr>
+    <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+    <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+    <th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+    </tr>
+    </thead>
+    <tbody><b></b>
+    <tr>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+    </tr>
+    </tbody>
+    </table>
+    
+    <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+      <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+      <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      </tr>
+      </tbody>
+      </table>    
+
+      <br></br>
+      <p><em><font color="061E62">Sample 2: 云层深处的黑暗啊 </font></em></p>
+      <table align="center">
+      <thead>
+      <tr>
+        <th style="font-weight: normal;text-align: center">Source </th>
+        <th style="font-weight: normal;text-align: center">Prompt </th>
+      
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\1_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0001.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+      </tr>
+      </tbody>
+      </table>
+      
+      <table align="center">
+      <thead>
+      <tr>
+      <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+      <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+      <th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+      </tr>
+      </thead>
+      <tbody><b></b>
+      <tr>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\1_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\1_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\1_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+      </tr>
+      </tbody>
+      </table>
+      
+      <table align="center">
+        <thead>
+        <tr>
+        <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+        <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+        <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\1_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\1_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\1_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        </tr>
+        </tbody>
+        </table>
+
+        <br></br>
+        <p><em><font color="061E62">Sample 3: 如果当时我们能不那么倔强 </font></em></p>
+        <table align="center">
+        <thead>
+        <tr>
+          <th style="font-weight: normal;text-align: center">Source </th>
+          <th style="font-weight: normal;text-align: center">Prompt </th>
+        
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\2_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0030.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+        </tr>
+        </tbody>
+        </table>
+        
+        <table align="center">
+        <thead>
+        <tr>
+        <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+        <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+        <th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+        </tr>
+        </thead>
+        <tbody><b></b>
+        <tr>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\2_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\2_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\2_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <table align="center">
+          <thead>
+          <tr>
+          <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+          <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+          <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\2_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\2_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\2_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          </tr>
+          </tbody>
+          </table>
+
+          <br></br>
+          <p><em><font color="061E62">Sample 4: 当记忆的线缠绕过往支离破碎是慌乱占据了心扉 </font></em></p>
+          <table align="center">
+          <thead>
+          <tr>
+          <th style="font-weight: normal;text-align: center">Source </th>
+          <th style="font-weight: normal;text-align: center">Prompt </th>
+          
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\3_wav_gt2.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\0037.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <!-- <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples/LJSpeech/0_wavs_fft.wav" autoplay/>Your browser does not support the audio element.</audio></td> -->
+          </tr>
+          </tbody>
+          </table>
+          
+          <table align="center">
+          <thead>
+          <tr>
+          <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (5% Training Data)</th>
+          <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (5% Training Data)</th>
+          <th style=" font-weight: normal;text-align: center">  Ours <br> (5%  Training Data)</th>
+          </tr>
+          </thead>
+          <tbody><b></b>
+          <tr>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\3_fft_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\3_m4_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\3_z_005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+          </tr>
+          </tbody>
+          </table>
+          
+          <table align="center">
+            <thead>
+            <tr>
+            <th style="font-weight: normal;text-align: center">FFTSinger-zs <br> (Full Training Data)</th>
+            <th style="font-weight: normal;text-align: center">DiffSinger-zs <br> (Full Training Data)</th>
+            <th style=" font-weight: normal;text-align: center">  Ours <br> (Full Training Data)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+            <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\3_fft_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\3_m4_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            <td style=" text-align: center"><audio controls="controls" ><source src="GeneratedSamples\out_demo_vc\3_z_full.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+            </tr>
+            </tbody>
+            </table>          
+</div>
+
+</p>
+
+			</section>
+		</article>
+	</main>
+
+
+	
+
+</div>
+
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-139981676-1', 'auto');
+	ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+<script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+         HTML: ["input/TeX","output/HTML-CSS"],
+         TeX: {
+                Macros: {
+                         bm: ["\\boldsymbol{#1}", 1],
+                         argmax: ["\\mathop{\\rm arg\\,max}\\limits"],
+                         argmin: ["\\mathop{\\rm arg\\,min}\\limits"]},
+                extensions: ["AMSmath.js","AMSsymbols.js"],
+                equationNumbers: { autoNumber: "AMS" } },
+         extensions: ["tex2jax.js"],
+         jax: ["input/TeX","output/HTML-CSS"],
+         tex2jax: { inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                    processEscapes: true },
+         "HTML-CSS": { availableFonts: ["TeX"],
+                       linebreaks: { automatic: true } }
+     });
+ </script>
+
+ <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       tex2jax: {
+         skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+       }
+     });
+ </script>
+
+ <script type="text/javascript" async
+   src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML">
+ </script>
+
+
+
+
+</body>
+</html>
